@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::string::ToString;
 use std::fs;
 use std::io::Read;
+use std::path::Path;
 
 use crate::commit::Commit;
 use crate::staged::Staged;
@@ -69,9 +70,18 @@ impl Repo<'_> {
     }
 
     pub fn add(&mut self, file: String) {
+        let file_path = Path::new(&file);
+        if !file_path.exists() {
+            eprintln!("File not found: {}", file);
+            return;
+        }
         let hash = Serialize::sha1_hash(&file);
         if !self.staged.get_files().contains(&hash) {
-            fs::copy(&file, format!(".gitlet/staged/{}", file)).unwrap();
+            let dest_path = format!(".gitlet/staged/{}", hash);
+            if let Err(err) = fs::copy(&file, &dest_path) {
+                eprintln!("Error copying file: {}", err);
+                return;
+            }
             self.staged.add(hash);
         }
     }
@@ -82,19 +92,18 @@ impl Repo<'_> {
 
     pub fn commit<'a>(&mut self, message: String) {
         let paths = fs::read_dir(".gitlet/staged").unwrap();
+
         let mut blobs: Vec<String> = Vec::new();
         for path in paths {
             let file = path.unwrap().path();
-            let file = file.to_str().unwrap();
-            let hash = Serialize::sha1_hash(file);
-            fs::copy(file, format!(".gitlet/blobs/{}", hash)).unwrap();
-            blobs.push(hash);
-            fs::remove_file(file).unwrap();
+            let file_name = file.file_name().unwrap().to_string_lossy().into_owned();
+
+            let dest_path = format!(".gitlet/blobs/{}", &file_name);
+            fs::rename(file, &dest_path).unwrap();
+            blobs.push(file_name);
         }
+
         let commit = Commit::commit(message, blobs, None);
         println!("commit id: {}", commit);
-        // self.prev_commit = Option::from(commit);
-        // let commit_hash = Serialize::sha1_hash(&commit.id);
     }
-
 }
