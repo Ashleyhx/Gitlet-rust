@@ -1,8 +1,8 @@
 use sha1::{Sha1, Digest};
 
-pub(crate) struct Serialize {}
+pub(crate) struct Serializing {}
 
-impl Serialize {
+impl Serializing {
 
     pub fn sha1_hash(data: &str) -> String {
         let mut hasher = Sha1::new();

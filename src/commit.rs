@@ -1,34 +1,35 @@
-use std::collections::HashMap;
-use std::time::SystemTime;
 use std::string::ToString;
-use std::ptr;
-use sha1::{Digest, Sha1};
-use crate::serialize::Serialize;
+use std::{fs};
+use serde::Serialize;
+use crate::serialize::Serializing;
 
 
-pub struct Commit<'a> {
+#[derive(Serialize)]
+pub struct Commit {
     id: String,
     commit_message: String,
     timestamp: String,
     pub(crate) blobs: Vec<String>,
-    pub(crate) parent: Option<&'a Commit<'a>>,
+    // pub(crate) parent: Option<&'a Commit<'a>>,
 }
 
-impl Commit<'_> {
-    pub fn commit<'a>(message: String, blobs: Vec<String>, parent: Option<&'a Commit<'a>>)
+impl Commit {
+    pub fn commit(message: String, blobs: Vec<String>)
         -> String {
         let timestamp = "2021-01-01 00:00:00 +0000".to_string();
 
-
-        let hash_result = Serialize::sha1_hash_commit(&message, &blobs, &timestamp);
+        let hash_result = Serializing::sha1_hash_commit(&message, &blobs, &timestamp);
 
         let commit = Commit {
             id: hash_result.clone(),
             commit_message: message,
             timestamp,
             blobs,
-            parent,
+            // parent,
         };
+        let commit_json = serde_json::to_string(&commit).unwrap();
+
+        fs::write(format!(".gitlet/commits/{}.json", hash_result), &commit_json).unwrap();
 
         hash_result
     }
