@@ -1,6 +1,4 @@
 
-use crate::serialize::Serialize;
-
 pub struct Staged {
     files: Vec<String>,
 }
