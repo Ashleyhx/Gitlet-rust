@@ -13,7 +13,7 @@ pub struct Repo{
     staged: Staged,
     file_hash_dict: HashMap<String, String>,
     file_hash_staged: HashMap<String, String>,
-    // current_commit: Option<String>,
+    current_commit: Option<String>,
 }
 
 impl Repo{
@@ -24,7 +24,7 @@ impl Repo{
             // parent: None,
             file_hash_dict: HashMap::new(),
             file_hash_staged: HashMap::new(),
-            // current_commit: None,
+            current_commit: None,
         }
     }
 
@@ -38,8 +38,9 @@ impl Repo{
 
         self.copy_files_and_hash("code/", ".gitlet/blobs/");
 
-        let cur_commit = Commit::commit("initial commit111".to_string(), HashMap::new());
-        // self.current_commit = Some(cur_commit);
+        let cur_commit =
+            Commit::commit("initial commit111".to_string(), HashMap::new(), None);
+        self.current_commit = Some(cur_commit);
     }
 
 
@@ -96,6 +97,7 @@ impl Repo{
     pub fn commit(&mut self, message: String) {
         let paths = fs::read_dir(".gitlet/staged").unwrap();
         let file_hash_staged_clone = self.file_hash_staged.clone();
+        let current_commit = self.current_commit.clone();
         for path in paths {
             let file = path.unwrap().path();
             let file_name = file.file_name().unwrap().to_string_lossy().into_owned();
@@ -103,7 +105,9 @@ impl Repo{
             let dest_path = format!(".gitlet/blobs/{}", &file_name);
             fs::rename(file, &dest_path).unwrap();
         }
-        let commit = Commit::commit(message, file_hash_staged_clone);
+        let commit =
+            Commit::commit(message, file_hash_staged_clone, current_commit);
+        self.current_commit = Some(commit);
         for (file, hash) in &self.file_hash_staged {
             self.file_hash_dict.insert(file.clone(), hash.clone());
         }
@@ -120,6 +124,16 @@ impl Repo{
             println!("commit {}", commit.get_id());
             println!("Date: {}", commit.get_timestamp());
             println!("{}", commit.get_message());
+        }
+    }
+
+    pub fn checkout(&self, commit_id: &str) {
+        let commit_path = format!(".gitlet/commits/{}.json", commit_id);
+        let commit_file = fs::File::open(commit_path).unwrap();
+        let commit: Commit = serde_json::from_reader(commit_file).unwrap();
+        for (file, hash) in &commit.blobs {
+            let dest_path = format!(".gitlet/blobs/{}", hash);
+            fs::copy(&dest_path, file).unwrap();
         }
     }
 }

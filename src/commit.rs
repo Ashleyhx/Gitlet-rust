@@ -11,21 +11,24 @@ pub struct Commit {
     commit_message: String,
     timestamp: String,
     pub(crate) blobs: HashMap<String, String>,
+    prev_commit: Option<String>,
 }
 
 impl Commit {
-    pub fn commit(message: String, blobs: HashMap<String, String>)
+    pub fn commit(message: String, blobs: HashMap<String, String>, prev_commit: Option<String>)
         -> String {
         let dt = Utc::now().naive_utc();
         let timestamp = dt.format("%Y-%m-%d %H:%M:%S").to_string();
 
-        let hash_result = Serializing::sha1_hash_commit(&message, &blobs, &timestamp.to_string());
+        let hash_result =
+            Serializing::sha1_hash_commit(&message, &blobs, &timestamp.to_string());
 
         let commit = Commit {
             id: hash_result.clone(),
             commit_message: message,
             timestamp: timestamp.to_string(),
             blobs,
+            prev_commit,
         };
         let commit_json = serde_json::to_string(&commit).unwrap();
 

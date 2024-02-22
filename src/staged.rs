@@ -11,7 +11,6 @@ impl Staged {
     }
 
     pub fn add(&mut self, file_hash: String) {
-        // let hash = Serialize::sha1_hash(&file);
         self.files.push(file_hash);
     }
 
