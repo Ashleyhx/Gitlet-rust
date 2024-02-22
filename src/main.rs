@@ -11,6 +11,7 @@ fn main() {
     repo.add("code/test2.txt".to_string());
 
     repo.commit("initial commit".to_string());
+    repo.log();
     println!("staged are: {:?}", repo.get_staged());
 
 

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use sha1::{Sha1, Digest};
 
 pub(crate) struct Serializing {}
@@ -18,11 +19,12 @@ impl Serializing {
         hex_string
     }
 
-    pub fn sha1_hash_commit(message: &str, blobs: &Vec<String>, timestamp: &str) -> String {
+    pub fn sha1_hash_commit(message: &str, blobs: &HashMap<String, String>, timestamp: &str) -> String {
         let mut hasher = Sha1::new();
         let mut data = message.to_string();
         for blob in blobs {
-            data.push_str(blob);
+            data.push_str(blob.0);
+            data.push_str(blob.1);
         }
         data.push_str(timestamp);
         hasher.update(data);

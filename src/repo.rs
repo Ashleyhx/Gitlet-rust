@@ -13,6 +13,7 @@ pub struct Repo{
     staged: Staged,
     file_hash_dict: HashMap<String, String>,
     file_hash_staged: HashMap<String, String>,
+    // current_commit: Option<String>,
 }
 
 impl Repo{
@@ -23,6 +24,7 @@ impl Repo{
             // parent: None,
             file_hash_dict: HashMap::new(),
             file_hash_staged: HashMap::new(),
+            // current_commit: None,
         }
     }
 
@@ -33,12 +35,11 @@ impl Repo{
         fs::create_dir(".gitlet/branches").unwrap();
         fs::create_dir(".gitlet/commits").unwrap();
         fs::create_dir(".gitlet/staged").unwrap();
-        // fs::create_dir(".gitlet/refs/tags").unwrap();
 
-        println!("init");
         self.copy_files_and_hash("code/", ".gitlet/blobs/");
 
-        let master = Commit::commit("initial commit".to_string(), Vec::new());
+        let cur_commit = Commit::commit("initial commit111".to_string(), HashMap::new());
+        // self.current_commit = Some(cur_commit);
     }
 
 
@@ -58,8 +59,6 @@ impl Repo{
                             file.read_to_string(&mut file_content).unwrap();
                             let hash = Serializing::sha1_hash(&file_content);
                             fs::copy(&file_path, format!(".gitlet/blobs/{}", hash)).unwrap();
-                            println!("1111hash: {}", hash);
-                            println!("1111file: {} ", file_path.to_str().unwrap());
                             self.file_hash_dict.insert(file_path.to_str().unwrap().to_string(), hash);
                         }
                     }
@@ -85,12 +84,8 @@ impl Repo{
                 eprintln!("Error copying file: {}", err);
                 return;
             }
-            println!("added {}", file);
-            println!("hash {}", hash);
             self.file_hash_staged.insert(file, hash.clone());
-
             self.staged.add(hash);
-
         }
     }
 
@@ -100,28 +95,31 @@ impl Repo{
 
     pub fn commit(&mut self, message: String) {
         let paths = fs::read_dir(".gitlet/staged").unwrap();
-
-        let mut blobs: Vec<String> = Vec::new();
+        let file_hash_staged_clone = self.file_hash_staged.clone();
         for path in paths {
             let file = path.unwrap().path();
             let file_name = file.file_name().unwrap().to_string_lossy().into_owned();
 
             let dest_path = format!(".gitlet/blobs/{}", &file_name);
             fs::rename(file, &dest_path).unwrap();
-            blobs.push(file_name);
         }
-        for (file, hash) in &self.file_hash_dict{
-            println!("AAAAAfile: {}", file);
-            println!("AAAAAhash: {}", hash);
-        }
-
+        let commit = Commit::commit(message, file_hash_staged_clone);
         for (file, hash) in &self.file_hash_staged {
             self.file_hash_dict.insert(file.clone(), hash.clone());
         }
-
         self.file_hash_staged.clear();
+    }
 
-        let commit = Commit::commit(message, blobs);
-        println!("commit id: {}", commit);
+    pub fn log(&self) {
+        let commit_dir = fs::read_dir(".gitlet/commits").unwrap();
+        for entry in commit_dir {
+            println!("=====================");
+            let entry = entry.unwrap();
+            let file = fs::File::open(entry.path()).unwrap();
+            let commit: Commit = serde_json::from_reader(file).unwrap();
+            println!("commit {}", commit.get_id());
+            println!("Date: {}", commit.get_timestamp());
+            println!("{}", commit.get_message());
+        }
     }
 }
