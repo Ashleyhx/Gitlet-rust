@@ -14,6 +14,7 @@ pub struct Repo{
     file_hash_dict: HashMap<String, String>,
     file_hash_staged: HashMap<String, String>,
     current_commit: Option<String>,
+    branches: HashMap<String, String>,
 }
 
 impl Repo{
@@ -21,10 +22,10 @@ impl Repo{
         Repo {
             head: "master".to_string(),
             staged: Staged::new(),
-            // parent: None,
             file_hash_dict: HashMap::new(),
             file_hash_staged: HashMap::new(),
             current_commit: None,
+            branches: HashMap::new(),
         }
     }
 
@@ -39,7 +40,7 @@ impl Repo{
         self.copy_files_and_hash("code/", ".gitlet/blobs/");
 
         let cur_commit =
-            Commit::commit("initial commit111".to_string(), HashMap::new(), None);
+            Commit::commit("initial commit".to_string(), HashMap::new(), None);
         self.current_commit = Some(cur_commit);
     }
 
